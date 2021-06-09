@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8"/>
+        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no"/>
+    </head>
+
+<div id="accordion"></div>
+<style>
+   .card {
+    background-color: aquamarine;
+    width: 150px;
+    padding: 1rem;
+    border: 1px solid black;
+    margin: 1rem;
+    }
+</style>
+
+<script>
+const apiResult = [{
+    title: "title1",
+    description: "desc1",
+    output: "out1"
+  }, {
+    title: "title2",
+    description: "desc2",
+    output: "out2"
+  }, {
+    title: "title3",
+    description: "desc3"
+  }];
+  
+  
+  const container = document.getElementById('accordion');
+  // Create card element
+  const card = document.createElement('div');
+    card.classList = 'card-body';
+  apiResult.forEach((result) => {
+    console.log("result",result)
+
+      Object.keys(result).forEach((key)=> {
+          console.log(key,result[key])
+  
+  
+    // Construct card content
+    const content = `
+      <div class="card">
+        <div class="card-body">
+          <h4>${key}</h4>
+          <label>${key}</label><input value="${result[key]}"></input><br>
+          <label>${key}</label><input value="${result[key]}"></input><br>
+          <button>Update</button>
+        </div>
+      </div>
+    `;
+    // Append newyly created card element to the container
+    container.innerHTML += content;
+})
+})
+
+</script>
+</html>

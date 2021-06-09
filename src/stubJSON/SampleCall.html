@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+    <link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
+    <link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
+
+    <title>FinCyan</title>
+    <style>
+        table,
+        th,
+        td {
+            padding: 5px;
+            text-align: left;
+        }
+        .card {
+         background-color: aquamarine;
+         width: 300px;
+         height: 100%;
+         padding: 1rem;
+         border: 1px solid black;
+         margin: 1rem;
+         }
+         .card-input {
+         width: 100px;
+         height: 20px;
+         border: 1px solid black;
+         }
+     </style>
+</head>
+
+<body>
+    <h1>Instructions</h1>
+    <p>whenever this function is called, we expect the User Data Model to be Update</p>
+    <p>    1)If error JSON type user model, the engine will return error </p>
+    <p>    2) If date is changed and sent, the engine will send a processing response</p>
+    <p>    3) After a few minutes, it the message is resent, the engine will send the goal success </p>
+    <br><br><br><br><br><br>
+    Start Year: <input type="text" id="startYear" value = "2018"></input>   <button onclick="myFunction()">Ok</button>
+    <script>
+    function myFunction() {
+    CardsArrayData['Data']['Scenario_data'][0]['cards'][1]['form']['start_year']=document.getElementById("startYear").value;
+            }
+    </script>
+    <br><br>
+    <table style="width:100%">
+        <tr>
+            <th>
+                <button style="width: 150px;height: 50px;" type="button" onclick="return createJSON(CardsArrayData);">
+                    <strong>CORRECT JSON</strong>
+                </button>
+            </th>
+            <th>
+                <button style="width: 150px;height: 50px;" type="button" onclick="return createJSON(CardsArrayErrorData);">
+                    <strong>ERROR JSON</strong>
+                </button>
+            </th>
+        </tr>
+        <tr>
+            <td>
+                <input type="text" id="correctJson" style="width: 500px;height: 50px;"></input>
+            </td>
+        </tr>
+    </table>
+    <script src='userModel.js'></script>
+    <script src='userModelError.js'></script>
+
+    <!-- correct JSON Function-->
+    <script>
+    function createJSON(CardsArrayIn) {
+            // console.log(CardsArray)
+
+            CardsArray = JSON.parse(JSON.stringify(CardsArrayIn['Data']['Scenario_data'][0]['cards'])) ;
+            CardsArray.forEach(card => {
+                 Object.entries(card['form']).forEach(([field, value]) => card[field] = value);
+
+            })
+            //console.log(CardsArray)
+            CardsArray.forEach((card) => {
+               
+                let cardKeyToBeDeleted = ['image',
+                    'scenario',
+                    'user',
+                    '_createdDate',
+                    '_updatedDate',
+                    'user',
+                    '_owner',
+                    'goal_success',
+                    'category',
+                    'title',
+                    'card_category',
+                    'errors',
+                    'form',
+                    'icon',
+                    'scale',
+                    'priority'
+                ];
+                cardKeyToBeDeleted.forEach((f) => delete card[f])
+            })
+            console.log(CardsArray)
+
+            var payload = {
+                 'version': '1.0',
+                 'cards': CardsArray
+            }
+            createCards(payload)
+            console.log("payload",payload)
+            lambdaFetch(payload)
+            return CardsArray
+    }
+
+        function lambdaFetch(payload) {
+            //console.log(JSON.stringify(payload))
+
+            var url = "https://0up4krohh9.execute-api.us-west-2.amazonaws.com/Prod" // sending it to gateway to pass through from HTTPS to HTTP 
+            // http://ec2-13-233-162-5.ap-south-1.compute.amazonaws.com:5000/fincyan/engine" // changed to new flask ec2 on 20190923
+            var myInit = {
+                method: 'POST',
+                body: JSON.stringify(payload),
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                mode: 'cors',
+                cache: 'default'
+            };
+            console.log("lambda fetch ", url, myInit)
+            document.getElementById("correctJson").value = "Lambda call intiated"
+
+            fetch(url, myInit)
+                .then((httpResponse) => {
+                    //console.log('Http response', httpResponse)
+                    if (httpResponse.ok) {
+                        return httpResponse.json();
+                    } else {
+                        return Promise.reject("Fetch did not succeed");
+                    }
+                })
+                .then((responseJSON) => {
+                    document.getElementById("correctJson").value = JSON.stringify(responseJSON);
+                    //console.log("preround  Response JSON", responseJSON)
+                    //console.log("response status :",responseJSON['engine_response_status']);
+                    switch (responseJSON['engine_response_status']) {
+                        case "errors":
+                            //  document.getElementById("errorJson").value = JSON.stringify(responseJSON.errors);
+                            console.log('errors',responseJSON.errors)
+                           //  updateErrors(responseJSON.errors);
+                            break;
+                        case "in_progress":
+                            //console.log('in progress',responseJSON.msg)
+                            break;
+                        case "goals_success":
+                            console.log('goal_success', responseJSON.goals_success)
+                           //  UpdateCard(responseJSON.goals_success)
+                            break;
+                        default:
+                            //console.log('something went wrong')
+                            break;
+                    }
+                    //console.log("round 1 Response JSON", responseJSON)
+                    // UpdateCard(responseJSON);
+                })
+                .catch(error => console.log('Error reound 1:lambdaFetch', error));
+        }
+    </script>
+
+    <!--Update Cards -->
+<br>
+<br>
+<h1>Dash Board Cards</h1>
+
+<div id="accordion"></div>
+
+
+<script>
+        console.log("start scripting..");
+       
+        const container = document.getElementById('accordion');
+       
+       // Create card element
+       const card = document.createElement('div');
+       card.classList = 'card-body';
+       
+       // Create label element
+       const label = document.createElement('label');
+       label.classList = 'card-label';
+       
+       // Create input element
+       const input = document.createElement('input');
+       input.classList = 'card-input';
+       
+       // Create input element
+       const button = document.createElement('button');
+       button.classList = 'card-button';
+       
+       // Create form element
+       const form = document.createElement("FORM");
+       form.classList = 'card-form';
+       
+       function createCards(CardsArray) { 
+           CardsArray = JSON.parse(JSON.stringify(CardsArray.cards)) ;
+       
+          // console.log(CardsArray) ;   
+           CardsArray.forEach((result) => {
+          // console.log("result1",result)
+           
+           delete result.card_type;
+           delete result._id;
+           delete result.card_description;
+           delete result.goal_priority;
+       
+           //console.log("result2",Object.keys(result).length , result)
+       
+           Object.keys(result).forEach((key)=> {
+           //console.log(key,result[key])
+       
+               //Construct card content
+               const content = `
+                   <div class="card">
+                   <div class="card-body">
+                   <label>${key}</label><input class='card-input' value ="${result[key]}" /><br>
+                   </div>
+                   <button class="delete" id="delete">Delete</button>
+                   </div>        
+               `;
+             
+              // Append newyly created card element to the container
+              container.innerHTML += content;
+           
+           })
+       
+       })
+           return CardsArray;
+       } 
+       
+       function deleteButton(e) {
+           if(e.target.className === 'delete') {
+               e.target.parentElement.remove();
+           }
+           //console.log(e);
+       }
+       
+       document.body.addEventListener('click', deleteButton);
+       
+</script>
+
+    
+</body>
+
+</html>
+
+
